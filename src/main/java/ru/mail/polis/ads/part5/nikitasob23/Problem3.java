@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.StringTokenizer;
 
 public class Problem3 {
@@ -17,18 +16,24 @@ public class Problem3 {
         }
 
         int[] dynamic = new int[length];
-        dynamic[0] = 1;
-        for (int i = 1; i < array.length; i++) {
-            for (int j = i-1; j >= 0; j--) {
-                if (array[j] != 0 && array[i] % array[j] == 0) {
-                    dynamic[i] = Integer.max(dynamic[i], dynamic[j]);
+        for (int i = 0; i < array.length; ++i) {
+            int max = 1;
+            for (int j = 0; j < i; ++j) {
+                if (array[j] == 0) continue;
+                if (array[i] % array[j] == 0 && dynamic[j] >= max) {
+                    max = dynamic[j] + 1;
                 }
             }
-            dynamic[i]++;
+            dynamic[i] = max;
         }
-        Arrays.stream(dynamic)
-                .reduce((item1, item2) -> Integer.max(item1, item2)).stream()
-                .forEach(out::println);
+
+        int max = 1;
+        for (int item : dynamic) {
+            if (max < item) {
+                max = item;
+            }
+        }
+        out.print(max);
     }
 
     private static class FastScanner {
