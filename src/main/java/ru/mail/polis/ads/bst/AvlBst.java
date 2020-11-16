@@ -91,9 +91,10 @@ public class AvlBst<Key extends Comparable<Key>, Value>
         if (node == null) {
             return null;
         }
-        if (key.compareTo(node.key) < 0) {
+        int nodeComparison = key.compareTo(node.key);
+        if (nodeComparison < 0) {
             return get(node.left, key);
-        } else if (key.compareTo(node.key) > 0) {
+        } else if (nodeComparison > 0) {
             return get(node.right, key);
         }
         return node;
@@ -104,9 +105,10 @@ public class AvlBst<Key extends Comparable<Key>, Value>
             size++;
             return new Node(key, value);
         }
-        if (key.compareTo(node.key) < 0) {
+        int nodeComparison = key.compareTo(node.key);
+        if (nodeComparison < 0) {
             node.left = put(node.left, key, value);
-        } else if (key.compareTo(node.key) > 0) {
+        } else if (nodeComparison > 0) {
             node.right = put(node.right, key, value);
         } else {
             node.value = value;
@@ -166,9 +168,10 @@ public class AvlBst<Key extends Comparable<Key>, Value>
         if (node == null) {
             return null;
         }
-        if (key.compareTo(node.key) < 0) {
+        int nodeComparison = key.compareTo(node.key);
+        if (nodeComparison < 0) {
             node.left = remove(node.left, key);
-        } else if (key.compareTo(node.key) > 0) {
+        } else if (nodeComparison > 0) {
             node.right = remove(node.right, key);
         } else {
             node = removeNode(node);
@@ -217,14 +220,15 @@ public class AvlBst<Key extends Comparable<Key>, Value>
             return null;
         }
         Key searchKey = null;
-        if (key.compareTo(node.key) < 0) {
+        int nodeComparison = key.compareTo(node.key);
+        if (nodeComparison < 0) {
             searchKey = ceil(node.left, key);
-        } else if (key.compareTo(node.key) > 0) {
+        } else if (nodeComparison > 0) {
             searchKey = ceil(node.right, key);
         } else {
             return node.key;
         }
-        if (searchKey == null && key.compareTo(node.key) < 0) {
+        if (searchKey == null && nodeComparison < 0) {
             return node.key;
         }
         return searchKey;
@@ -235,14 +239,15 @@ public class AvlBst<Key extends Comparable<Key>, Value>
             return null;
         }
         Key searchKey = null;
-        if (key.compareTo(node.key) < 0) {
+        int nodeComparison = key.compareTo(node.key);
+        if (nodeComparison < 0) {
             searchKey = floor(node.left, key);
-        } else if (key.compareTo(node.key) > 0) {
+        } else if (nodeComparison > 0) {
             searchKey = floor(node.right, key);
         } else {
             return node.key;
         }
-        if (searchKey == null && key.compareTo(node.key) > 0) {
+        if (searchKey == null && nodeComparison > 0) {
             return node.key;
         }
         return searchKey;
