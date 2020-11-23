@@ -13,8 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HashTableBaseTest {
 
     HashTable<String, String> newTable() {
-        // Use implementation
-        return null;
+        return new Hash<>();
     }
 
     @Test
@@ -24,7 +23,6 @@ class HashTableBaseTest {
         assertNull(table.get("some key"));
         assertEquals(0, table.size());
     }
-
 
     @Test
     void put() {
