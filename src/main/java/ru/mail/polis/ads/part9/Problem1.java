@@ -5,23 +5,20 @@ import java.io.PrintWriter;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.StringTokenizer;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.LinkedList;
 import java.util.Stack;
+import java.util.StringTokenizer;
 
 public class Problem1 {
-
     private static void solve(final FastScanner in, final PrintWriter out) {
         int vertexesAmount = in.nextInt();
         int facesAmount = in.nextInt();
-        Graph graph = new Graph();
+        Graph graph = new Graph(vertexesAmount);
         for (int face = 0; face < facesAmount; face++) {
             graph.addFace(in.nextInt(), in.nextInt());
         }
-        Stack<Integer> result = graph.dfs();
+        Stack<Integer> result = graph.getSort();
         if (result != null) {
             while (!result.isEmpty()) {
                 out.print(result.pop() + " ");
@@ -64,56 +61,52 @@ public class Problem1 {
 }
 
 class Graph {
-    private Map<Integer, List<Integer>> vertexes = new HashMap<>();
+    private List<Integer>[] vertexes;
 
     private enum Visited {
         RED, BLACK
     }
 
+    public Graph(int size) {
+        vertexes = new List[size+1];
+    }
+
     public void addFace(int beginVertex, int endVertex) {
-        if (!vertexes.containsKey(beginVertex)) {
-            vertexes.put(beginVertex, new LinkedList<>());
+        if (vertexes[beginVertex] == null) {
+            vertexes[beginVertex] = new ArrayList<>();
         }
-        vertexes.get(beginVertex).add(endVertex);
-        if (!vertexes.containsKey(endVertex)) {
-            vertexes.put(endVertex, new LinkedList<>());
-        }
+        vertexes[beginVertex].add(endVertex);
     }
 
-    public Stack<Integer> dfs() {
-        Map<Integer, Visited> visited = initVisited();
-        Stack<Integer> stack = new Stack<>();
-        for (Map.Entry<Integer, List<Integer>> vertex : vertexes.entrySet()) {
-            if (!dfs(visited, stack, vertex.getKey())) {
-                return null;
-            }
-        }
-        return stack;
-    }
-
-    private boolean dfs(Map<Integer, Visited> visited, Stack<Integer> stack, int vertexId) {
-        Visited visitedItem = visited.get(vertexId);
-        if (visitedItem != null && visitedItem.equals(Visited.RED)) {
-            return false;
-        }
-        if (visited.get(vertexId) == null) {
-            visited.put(vertexId, Visited.RED);
-            for (int neighbor : vertexes.get(vertexId)) {
-                if (!dfs(visited, stack, neighbor)) {
-                    return false;
+    public Stack<Integer> getSort() {
+        Visited[] visited = new Visited[vertexes.length];
+        Stack<Integer> sortVertexes = new Stack<>();
+        for (int vertexNum = 1; vertexNum < visited.length; vertexNum++) {
+            if (visited[vertexNum] == null) {
+                boolean cycleExists = dfs(vertexNum, visited, sortVertexes);
+                if (cycleExists) {
+                    return null;
                 }
             }
-            visited.put(vertexId, Visited.BLACK);
-            stack.push(vertexId);
         }
-        return true;
+        return sortVertexes;
     }
 
-    private Map<Integer, Visited> initVisited() {
-        Map<Integer, Visited> visited = new HashMap<>();
-        for (Map.Entry<Integer, List<Integer>> vertex : vertexes.entrySet()) {
-            visited.put(vertex.getKey(), null);
+    private boolean dfs(int vertexNum, Visited[] visited, Stack<Integer> sortVertexes) {
+        boolean cycleExists = false;
+        visited[vertexNum] = Visited.RED;
+        if (vertexes[vertexNum] != null) {
+            for (int neighborNum : vertexes[vertexNum]) {
+                if (cycleExists || visited[neighborNum] == Visited.RED) {
+                    return true;
+                }
+                if (visited[neighborNum] == null) {
+                    cycleExists = dfs(neighborNum, visited, sortVertexes);
+                }
+            }
         }
-        return visited;
+        visited[vertexNum] = Visited.BLACK;
+        sortVertexes.push(vertexNum);
+        return cycleExists;
     }
 }

@@ -5,18 +5,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Problem2 {
 
     private static void solve(final FastScanner in, final PrintWriter out) {
-        int vertexesAmount = in.nextInt();
+        Graph graph = new Graph(in.nextInt()/*vertexesAmount*/);
         int facesAmount = in.nextInt();
-        Graph graph = new Graph();
         for (int faceNum = 0; faceNum < facesAmount; faceNum++) {
-            graph.addFace(in.nextInt(), in.nextInt());
+            graph.addFace(in.nextInt()/*beginVertex*/, in.nextInt()/*endVertex*/);
         }
-
         Integer minCycleVertex = graph.findMinCycleVertex();
         out.println(minCycleVertex == null ? "No" : "Yes\n" + minCycleVertex);
     }
@@ -54,76 +55,81 @@ public class Problem2 {
 }
 
 class Graph {
-    private Map<Integer, List<Integer>> vertexes = new HashMap<>();
+    private List<Integer>[] vertexes;
 
     private class Cycle {
+        boolean inCycle;
+        boolean exists;
         int entryItem;
         int minItem;
-        boolean inCycle;
 
-        Cycle(int vertexId) {
-            entryItem = vertexId;
-            minItem = entryItem;
+        void init(int entryItem) {
             inCycle = true;
+            exists = true;
+            this.entryItem = entryItem;
+            minItem = entryItem;
         }
     }
 
-    public void addFace(int beginVertexId, int endVertexId) {
-        putVertex(beginVertexId, endVertexId);
-        putVertex(endVertexId, beginVertexId);
+    public Graph(int size) {
+        vertexes = new List[size+1];
+    }
+
+    public void addFace(int beginVertex, int endVertex) {
+        putVertexes(beginVertex, endVertex);
+        putVertexes(endVertex, beginVertex);
+    }
+
+    private void putVertexes(int beginVertex, int endVertex) {
+        if (vertexes[beginVertex] == null) {
+            vertexes[beginVertex] = new ArrayList<>();
+        }
+        if (!vertexes[beginVertex].contains(endVertex)) {
+            vertexes[beginVertex].add(endVertex);
+        }
     }
 
     public Integer findMinCycleVertex() {
-        Map<Integer, Boolean> visited = initVisited();
-        Cycle cycle = null;
-        while (cycle == null && visited.containsValue(false)) {
-            for (Map.Entry<Integer, Boolean> visitedItem : visited.entrySet()) {
-                if (!visitedItem.getValue()) {
-                    cycle = findMinCycleVertex(visitedItem.getKey(), -1, visited);
-                    break;
-                }
+        boolean[] visited = new boolean[vertexes.length];
+        List<Integer> minCycleItemsList = new LinkedList<>();
+        Cycle cycle = new Cycle();
+        for (int vertexNum = 1; vertexNum < visited.length; vertexNum++) {
+            if (!visited[vertexNum] && !cycle.exists) {
+                dfs(vertexNum, 0, visited, cycle);
+            }
+            if (cycle.minItem != 0) {
+                minCycleItemsList.add(cycle.minItem);
             }
         }
-        return cycle == null ? null : cycle.minItem;
+        return minCycleItemsList.isEmpty() ? null : minCycleItemsList.stream()
+                .min(Integer::compareTo)
+                .get();
     }
 
-    private Cycle findMinCycleVertex(int vertexId, int prevVertexId, Map<Integer, Boolean> visited) {
-        visited.put(vertexId, true);
-        Cycle cycle = null;
-        for (int neighborId : vertexes.get(vertexId)) {
-            if (neighborId != prevVertexId) {
-                if (visited.get(neighborId)) {
-                    cycle = new Cycle(neighborId);
-                    break;
+    private void dfs(int vertexNum, int prevVertex, boolean[] visited, Cycle cycle) {
+        visited[vertexNum] = true;
+        if (vertexes[vertexNum] == null) {
+            return;
+        }
+        for (int neighborNum : vertexes[vertexNum]) {
+            if (neighborNum != prevVertex) {
+                if (visited[neighborNum]) {
+                    cycle.init(neighborNum);
                 } else {
-                    cycle = findMinCycleVertex(neighborId, vertexId, visited);
-                }
-                if (cycle != null) {
-                    if (cycle.entryItem == neighborId) {
-                        cycle.inCycle = false;
-                    }
-                    if (cycle.inCycle) {
-                        cycle.minItem = Math.min(neighborId, cycle.minItem);
-                    }
-                    break;
+                    dfs(neighborNum, vertexNum, visited, cycle);
                 }
             }
+            if (cycle.inCycle) {
+                if (vertexNum < cycle.minItem) {
+                    cycle.minItem = vertexNum;
+                }
+                if (vertexNum == cycle.entryItem) {
+                    cycle.inCycle = false;
+                }
+            }
+            if (cycle.exists) {
+                break;
+            }
         }
-        return cycle;
-    }
-
-    private void putVertex(int beginVertexId, int endVertexId) {
-        if (!vertexes.containsKey(beginVertexId)) {
-            vertexes.put(beginVertexId, new LinkedList<>());
-        }
-        vertexes.get(beginVertexId).add(endVertexId);
-    }
-
-    private Map<Integer, Boolean> initVisited() {
-        Map<Integer, Boolean> visited = new HashMap<>();
-        for (Map.Entry<Integer, List<Integer>> vertex : vertexes.entrySet()) {
-            visited.put(vertex.getKey(), false);
-        }
-        return visited;
     }
 }

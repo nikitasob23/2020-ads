@@ -5,25 +5,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.IOException;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.StringTokenizer;
 
 public class Problem5 {
 
     private static void solve(final FastScanner in, final PrintWriter out) {
-        int vertexesAmount = in.nextInt();
+        Graph graph = new Graph(in.nextInt()/*vertexesAmount*/);
         int facesAmount = in.nextInt();
-        int startVertexId = in.nextInt();
-        int endVertexId = in.nextInt();
-        Graph graph = new Graph();
+        int startVertex = in.nextInt();
+        int finishVertex = in.nextInt();
         for (int vertex = 0; vertex < facesAmount; vertex++) {
-            graph.addFace(in.nextInt(), in.nextInt());
+            graph.addFace(in.nextInt()/*beginVertex*/, in.nextInt()/*endVertex*/);
         }
-        out.println(graph.findMinWay(startVertexId, endVertexId));
+        out.println(graph.bfs(startVertex, finishVertex));
     }
 
     private static class FastScanner {
@@ -59,94 +57,62 @@ public class Problem5 {
 }
 
 class Graph {
-    private Map<Integer, List<Integer>> vertexes = new HashMap<>();
+    private final List<Integer>[] vertexes;
 
-    private class Ways {
-        Map<Integer, Integer> min = new HashMap<>();
-        Map<Integer, List<Integer>> vertexMap = new HashMap<>();
+    public Graph(int size) {
+        vertexes = new List[size+1];
     }
 
-    public void addFace(int beginVertexId, int endVertexId) {
-        putVertexes(beginVertexId, endVertexId);
-        putVertexes(endVertexId, beginVertexId);
+    public void addFace(int beginVertex, int endVertex) {
+        putVertexes(beginVertex, endVertex);
+        putVertexes(endVertex, beginVertex);
     }
 
-    public String findMinWay(int startVertexId, int endVertexId) {
-        Map<Integer, Boolean> visited = initVisited();
-        Ways ways = initWays(startVertexId);
-        Deque<Integer> queue = new LinkedList<>();
-        queue.offer(startVertexId);
+    public void putVertexes(int beginVertex, int endVertex) {
+        if (vertexes[beginVertex] == null) {
+            vertexes[beginVertex] = new ArrayList<>();
+        }
+        vertexes[beginVertex].add(endVertex);
+    }
 
-        while (!queue.isEmpty()) {
-            int vertexId = queue.poll();
-            visited.put(vertexId, true);
-            for (int neighborId : vertexes.get(vertexId)) {
-                if (neighborId != vertexId) {
-                    findNewMinWay(vertexId, neighborId, ways);
-                    if (!visited.get(neighborId) && !queue.contains(neighborId)) {
-                        queue.offer(neighborId);
+    public String bfs(int startVertex, int finishVertex) {
+        boolean[] visited = new boolean[vertexes.length];
+        int[] distance = new int[vertexes.length];
+        int[] way = new int[vertexes.length];
+        Deque<Integer> vertexQueue = new ArrayDeque<>();
+        vertexQueue.offer(startVertex);
+
+        while (!vertexQueue.isEmpty()) {
+            int vertexNum = vertexQueue.poll();
+            visited[vertexNum] = true;
+            if (vertexes[vertexNum] != null) {
+                for (int neighborNum : vertexes[vertexNum]) {
+                    if (!visited[neighborNum]) {
+                        setDistanceAndWay(vertexNum, neighborNum, distance, way);
+                        vertexQueue.offer(neighborNum);
                     }
                 }
             }
         }
-        return findMinWayResult(ways, endVertexId);
-    }
-
-    private void putVertexes(int beginVertexId, int endVertexId) {
-        if (!vertexes.containsKey(beginVertexId)) {
-            vertexes.put(beginVertexId, new LinkedList<>());
-        }
-        vertexes.get(beginVertexId).add(endVertexId);
-    }
-
-    private Map<Integer, Boolean> initVisited() {
-        Map<Integer, Boolean> visited = new HashMap<>();
-        for (Map.Entry<Integer, List<Integer>> vertex : vertexes.entrySet()) {
-            visited.put(vertex.getKey(), false);
-        }
-        return visited;
-    }
-
-    private Ways initWays(int startVertexId) {
-        Ways ways = new Ways();
-        for (Map.Entry<Integer, List<Integer>> vertex : vertexes.entrySet()) {
-            int vertexId = vertex.getKey();
-            ways.min.put(vertexId, Integer.MAX_VALUE);
-            ways.vertexMap.put(vertexId, new LinkedList<>());
-        }
-        ways.min.put(startVertexId, 0);
-        ways.vertexMap.get(startVertexId).add(startVertexId);
-        return ways;
-    }
-
-    private void findNewMinWay(int vertexId, int neighborId, Ways ways) {
-        int newWay = ways.min.get(vertexId) + 1;
-        int minWay = ways.min.get(neighborId);
-        if (newWay < minWay) {
-            setNewMinWay(vertexId, neighborId, ways, newWay);
-        }
-        if (minWay != Integer.MAX_VALUE) {
-            newWay = minWay + 1;
-            if (newWay < ways.min.get(vertexId)) {
-                setNewMinWay(neighborId, vertexId, ways, newWay);
-            }
-        }
-    }
-
-    private void setNewMinWay(int vertexId, int neighborId, Ways ways, int newWay) {
-        ways.min.put(neighborId, newWay);
-        ways.vertexMap.put(neighborId, new LinkedList<>(ways.vertexMap.get(vertexId)));
-        ways.vertexMap.get(neighborId).add(neighborId);
-    }
-
-    private String findMinWayResult(Ways ways, int endVertexId) {
-        int minWay = ways.min.get(endVertexId);
-        if (minWay == Integer.MAX_VALUE) {
+        if (way[finishVertex] == 0) {
             return "-1";
         }
-        return minWay + "\n" + ways.vertexMap.get(endVertexId).stream()
-                .map(Object::toString)
-                .reduce((first, second) -> first + " " + second)
-                .get();
+        return distance[finishVertex] + "\n" + restoreMinWay(finishVertex, way);
+    }
+
+    private String restoreMinWay(int finishVertex, int[] way) {
+        StringBuilder sb = new StringBuilder();
+        for (int vertexNum = finishVertex; vertexNum > 0; vertexNum = way[vertexNum]) {
+            sb.append(" ").append(vertexNum);
+        }
+        return sb.reverse().toString();
+    }
+
+    private void setDistanceAndWay(int vertexNum, int neighborNum, int[] distance, int[] way) {
+        int dist = distance[vertexNum] + 1;
+        if (distance[neighborNum] == 0 || dist < distance[neighborNum]) {
+            distance[neighborNum] = dist;
+            way[neighborNum] = vertexNum;
+        }
     }
 }
